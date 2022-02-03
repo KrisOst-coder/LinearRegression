@@ -1,0 +1,1115 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### Исследовательский проект \n",
+    "“Предсказание рейтингов фильмов на основе компьютерного анализа биологических сигналов респондентов” "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    " "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Линейная регрессия "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 84,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import matplotlib\n",
+    "import matplotlib.pyplot as plt\n",
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "import warnings\n",
+    "import shap\n",
+    "warnings.simplefilter(\"ignore\")\n",
+    "%matplotlib inline\n",
+    "\n",
+    "sns.set(style=\"darkgrid\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 38,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.preprocessing import QuantileTransformer"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 39,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Theta</th>\n",
+       "      <th>Alpha</th>\n",
+       "      <th>Beta</th>\n",
+       "      <th>TotalAbsPow</th>\n",
+       "      <th>Theta_watch-relax</th>\n",
+       "      <th>Alpha_watch-relax</th>\n",
+       "      <th>Beta_watch-relax</th>\n",
+       "      <th>Beta/Alpha</th>\n",
+       "      <th>Beta/(Alpha + Theta)</th>\n",
+       "      <th>ApEn</th>\n",
+       "      <th>...</th>\n",
+       "      <th>ShanEn</th>\n",
+       "      <th>SpEn</th>\n",
+       "      <th>WPEn</th>\n",
+       "      <th>ch</th>\n",
+       "      <th>film</th>\n",
+       "      <th>Subj</th>\n",
+       "      <th>labels</th>\n",
+       "      <th>Theta_ratio</th>\n",
+       "      <th>Alpha_ratio</th>\n",
+       "      <th>Beta_ratio</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>0.306417</td>\n",
+       "      <td>0.051499</td>\n",
+       "      <td>0.047905</td>\n",
+       "      <td>0.166229</td>\n",
+       "      <td>0.552600</td>\n",
+       "      <td>0.766122</td>\n",
+       "      <td>0.931168</td>\n",
+       "      <td>0.268510</td>\n",
+       "      <td>0.723673</td>\n",
+       "      <td>0.657834</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.416636</td>\n",
+       "      <td>0.656087</td>\n",
+       "      <td>0.999443</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>10</td>\n",
+       "      <td>0.526244</td>\n",
+       "      <td>0.203860</td>\n",
+       "      <td>0.269896</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>0.130892</td>\n",
+       "      <td>0.027491</td>\n",
+       "      <td>0.035651</td>\n",
+       "      <td>0.080043</td>\n",
+       "      <td>0.486594</td>\n",
+       "      <td>0.764210</td>\n",
+       "      <td>0.931905</td>\n",
+       "      <td>0.268885</td>\n",
+       "      <td>0.724264</td>\n",
+       "      <td>0.757770</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.416455</td>\n",
+       "      <td>0.746751</td>\n",
+       "      <td>0.999079</td>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>10</td>\n",
+       "      <td>0.421152</td>\n",
+       "      <td>0.211133</td>\n",
+       "      <td>0.367715</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0.074232</td>\n",
+       "      <td>0.017666</td>\n",
+       "      <td>0.039045</td>\n",
+       "      <td>0.057475</td>\n",
+       "      <td>0.495192</td>\n",
+       "      <td>0.753900</td>\n",
+       "      <td>0.932780</td>\n",
+       "      <td>0.256988</td>\n",
+       "      <td>0.693936</td>\n",
+       "      <td>0.640169</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.416334</td>\n",
+       "      <td>0.565815</td>\n",
+       "      <td>0.999200</td>\n",
+       "      <td>3</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>10</td>\n",
+       "      <td>0.348217</td>\n",
+       "      <td>0.193641</td>\n",
+       "      <td>0.458142</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>0.199833</td>\n",
+       "      <td>0.055224</td>\n",
+       "      <td>0.058346</td>\n",
+       "      <td>0.142365</td>\n",
+       "      <td>0.513512</td>\n",
+       "      <td>0.772845</td>\n",
+       "      <td>0.935005</td>\n",
+       "      <td>0.268511</td>\n",
+       "      <td>0.723786</td>\n",
+       "      <td>0.660308</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.415972</td>\n",
+       "      <td>0.548588</td>\n",
+       "      <td>1.000000</td>\n",
+       "      <td>4</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>10</td>\n",
+       "      <td>0.414250</td>\n",
+       "      <td>0.247133</td>\n",
+       "      <td>0.338618</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>0.291537</td>\n",
+       "      <td>0.086981</td>\n",
+       "      <td>0.056585</td>\n",
+       "      <td>0.196472</td>\n",
+       "      <td>0.511219</td>\n",
+       "      <td>0.783938</td>\n",
+       "      <td>0.929024</td>\n",
+       "      <td>0.267723</td>\n",
+       "      <td>0.723650</td>\n",
+       "      <td>0.595585</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.416575</td>\n",
+       "      <td>0.674397</td>\n",
+       "      <td>0.998649</td>\n",
+       "      <td>6</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>10</td>\n",
+       "      <td>0.455908</td>\n",
+       "      <td>0.279164</td>\n",
+       "      <td>0.264928</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>5 rows × 39 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "      Theta     Alpha      Beta  TotalAbsPow  Theta_watch-relax  \\\n",
+       "0  0.306417  0.051499  0.047905     0.166229           0.552600   \n",
+       "1  0.130892  0.027491  0.035651     0.080043           0.486594   \n",
+       "2  0.074232  0.017666  0.039045     0.057475           0.495192   \n",
+       "3  0.199833  0.055224  0.058346     0.142365           0.513512   \n",
+       "4  0.291537  0.086981  0.056585     0.196472           0.511219   \n",
+       "\n",
+       "   Alpha_watch-relax  Beta_watch-relax  Beta/Alpha  Beta/(Alpha + Theta)  \\\n",
+       "0           0.766122          0.931168    0.268510              0.723673   \n",
+       "1           0.764210          0.931905    0.268885              0.724264   \n",
+       "2           0.753900          0.932780    0.256988              0.693936   \n",
+       "3           0.772845          0.935005    0.268511              0.723786   \n",
+       "4           0.783938          0.929024    0.267723              0.723650   \n",
+       "\n",
+       "       ApEn  ...    ShanEn      SpEn      WPEn  ch  film  Subj  labels  \\\n",
+       "0  0.657834  ...  0.416636  0.656087  0.999443   1     1     1      10   \n",
+       "1  0.757770  ...  0.416455  0.746751  0.999079   2     1     1      10   \n",
+       "2  0.640169  ...  0.416334  0.565815  0.999200   3     1     1      10   \n",
+       "3  0.660308  ...  0.415972  0.548588  1.000000   4     1     1      10   \n",
+       "4  0.595585  ...  0.416575  0.674397  0.998649   6     1     1      10   \n",
+       "\n",
+       "   Theta_ratio  Alpha_ratio  Beta_ratio  \n",
+       "0     0.526244     0.203860    0.269896  \n",
+       "1     0.421152     0.211133    0.367715  \n",
+       "2     0.348217     0.193641    0.458142  \n",
+       "3     0.414250     0.247133    0.338618  \n",
+       "4     0.455908     0.279164    0.264928  \n",
+       "\n",
+       "[5 rows x 39 columns]"
+      ]
+     },
+     "execution_count": 39,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "data = pd.read_csv(\"/Users/apple/Desktop/lab_dataset_filtered.csv\")\n",
+    "data.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Посмотрим на размер данных"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 40,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(1576, 39)"
+      ]
+     },
+     "execution_count": 40,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "data.shape"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "##### Посмотрим на значение столбцов"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 41,
+   "metadata": {
+    "scrolled": true
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Index(['Theta', 'Alpha', 'Beta', 'TotalAbsPow', 'Theta_watch-relax',\n",
+       "       'Alpha_watch-relax', 'Beta_watch-relax', 'Beta/Alpha',\n",
+       "       'Beta/(Alpha + Theta)', 'ApEn', 'CREn', 'DiffEn', 'FI', 'Hjorth',\n",
+       "       'Hurst', 'KFD', 'LZC', 'MSE', 'MSPEn', 'NLD', 'PEn', 'PFD', 'PLZC',\n",
+       "       'PSDslope', 'RR', 'SDA', 'SFD', 'SVDEn', 'SampEn', 'ShanEn', 'SpEn',\n",
+       "       'WPEn', 'ch', 'film', 'Subj', 'labels', 'Theta_ratio', 'Alpha_ratio',\n",
+       "       'Beta_ratio'],\n",
+       "      dtype='object')"
+      ]
+     },
+     "execution_count": 41,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "data.columns"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Уберем факторы, которые не несут в себе смысл для нахождения закономерности, например каналы: \"film\", \"ch\", \"Subj\".\n",
+    "\n",
+    "А так же вынесем главный признак, который мы собственное и ходим угадывать - канал \"labels\".\n",
+    "Теперь обучающая матрица будет находится в переменной X\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 43,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X_test = data.loc[(data['Subj']  == 11)].reset_index(drop=True)\n",
+    "X_train = data.loc[(data['Subj'] != 11)].reset_index(drop=True)\n",
+    "X_train = X_train.sample(frac=1)\n",
+    "X_test = X_test.sample(frac=1)\n",
+    "\n",
+    "y_train = X_train['labels']\n",
+    "y_test_inv = np.array(X_test['labels'])\n",
+    "train_film = X_train['film']\n",
+    "train_subj = X_train['Subj']\n",
+    "train_ch = X_train['ch']\n",
+    "test_film = X_test['film']\n",
+    "test_subj = X_test['Subj']\n",
+    "test_ch = np.array(X_test['ch'])\n",
+    "\n",
+    "X_train = X_train.drop(['film', 'labels', 'Subj'], axis=1)\n",
+    "X_test = X_test.drop(['film', 'labels', 'Subj'], axis=1)\n",
+    "\n",
+    "\n",
+    "qt_train = QuantileTransformer(output_distribution='normal',\n",
+    "                           copy=True)\n",
+    "y_train = pd.DataFrame(qt_train.fit_transform(np.array(y_train).reshape(-1, 1)))\n",
+    "qt_test = QuantileTransformer(output_distribution='normal',\n",
+    "                             copy=True)\n",
+    "y_test = pd.DataFrame(qt_test.fit_transform(np.array(y_test_inv).reshape(-1, 1)))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 45,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "Ridge()"
+      ]
+     },
+     "execution_count": 45,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from sklearn.linear_model import Ridge\n",
+    "model = Ridge()\n",
+    "model.fit(X_train, y_train)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 47,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "y_pred = model.predict(X_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 48,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "preds = qt_test.inverse_transform(y_pred.reshape(-1, 1))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 49,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[<matplotlib.axes._subplots.AxesSubplot object at 0x13002c220>]],\n",
+       "      dtype=object)"
+      ]
+     },
+     "execution_count": 49,
+     "metadata": {},
+     "output_type": "execute_result"
+    },
+    {
+     "data": {
+      "image/png": "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\n",
+      "text/plain": [
+       "<Figure size 432x288 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "pd.DataFrame(preds).hist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 50,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>0</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>count</th>\n",
+       "      <td>106.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>mean</th>\n",
+       "      <td>5.278530</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>std</th>\n",
+       "      <td>1.500584</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>min</th>\n",
+       "      <td>3.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>25%</th>\n",
+       "      <td>4.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>50%</th>\n",
+       "      <td>5.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>75%</th>\n",
+       "      <td>6.000000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>max</th>\n",
+       "      <td>8.000000</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                0\n",
+       "count  106.000000\n",
+       "mean     5.278530\n",
+       "std      1.500584\n",
+       "min      3.000000\n",
+       "25%      4.000000\n",
+       "50%      5.000000\n",
+       "75%      6.000000\n",
+       "max      8.000000"
+      ]
+     },
+     "execution_count": 50,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "pd.DataFrame(preds).describe()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 51,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "chans = ['Fz', 'F3', 'F7','C3', 'T7', 'Pz', 'P3','P7', 'O1', 'Oz', 'O2','P4', 'P8', 'Cz','C4', 'T8', 'F4', 'F8']\n",
+    "pred = [[0 for j in range(8)] for i in range(12)]\n",
+    "num_chans = [[0 for j in range(8)] for i in range(12)]\n",
+    "labels = [[0 for j in range(8)] for i in range(12)]\n",
+    "lbl = [[0 for j in range(8)] for i in range(12)]\n",
+    "channels = [[] for i in range(12)]\n",
+    "for i in range(len(preds)):\n",
+    "    pred[np.array(test_subj)[i] - 1][np.array(test_film)[i] - 1] += np.array(preds)[i]\n",
+    "    num_chans[np.array(test_subj)[i] - 1][np.array(test_film)[i] - 1] += 1\n",
+    "    labels[np.array(test_subj)[i] - 1][np.array(test_film)[i] - 1] += np.array(y_test_inv)[i]\n",
+    "    channels[np.array(test_subj)[i] - 1].append(chans[test_ch[i] - 1])\n",
+    "labels = np.array(labels).astype(np.float64) / np.array(num_chans).astype(np.float64)\n",
+    "pred = np.array(pred).astype(np.float64) / np.array(num_chans).astype(np.float64)\n",
+    "labels = np.nan_to_num(labels)\n",
+    "pred = np.nan_to_num(pred)\n",
+    "predicted = []\n",
+    "lbl = []\n",
+    "for i in range(len(labels)):\n",
+    "    if sum(labels[i]) != 0:\n",
+    "        for j in range(8):\n",
+    "            if labels[i][j] != 0:\n",
+    "                lbl.append(labels[i][j])  \n",
+    "                predicted.append(pred[i][j])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 52,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "label : 8.00 predicted: 6.94 \n",
+      "label : 3.00 predicted: 4.61 \n",
+      "label : 5.00 predicted: 3.76 \n",
+      "label : 8.00 predicted: 6.06 \n",
+      "label : 6.00 predicted: 5.33 \n",
+      "label : 4.00 predicted: 5.17 \n"
+     ]
+    }
+   ],
+   "source": [
+    "for [l, p] in zip(lbl, predicted):\n",
+    "    print('label : {:0.2f} predicted: {:0.2f} '.format(l, p))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 61,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Collecting scikit-learn==0.24\n",
+      "  Downloading scikit_learn-0.24.0-cp38-cp38-macosx_10_9_x86_64.whl (7.2 MB)\n",
+      "\u001b[K     |████████████████████████████████| 7.2 MB 3.4 MB/s eta 0:00:01\n",
+      "\u001b[?25hCollecting threadpoolctl>=2.0.0\n",
+      "  Downloading threadpoolctl-3.1.0-py3-none-any.whl (14 kB)\n",
+      "Collecting numpy>=1.13.3\n",
+      "  Downloading numpy-1.22.1-cp38-cp38-macosx_10_9_x86_64.whl (17.6 MB)\n",
+      "\u001b[K     |████████████████████████████████| 17.6 MB 5.6 MB/s eta 0:00:01\n",
+      "\u001b[?25hCollecting scipy>=0.19.1\n",
+      "  Downloading scipy-1.7.3-cp38-cp38-macosx_10_9_x86_64.whl (33.0 MB)\n",
+      "\u001b[K     |████████████████████████████████| 33.0 MB 2.0 MB/s eta 0:00:01\n",
+      "\u001b[?25hCollecting joblib>=0.11\n",
+      "  Downloading joblib-1.1.0-py2.py3-none-any.whl (306 kB)\n",
+      "\u001b[K     |████████████████████████████████| 306 kB 426 kB/s eta 0:00:01\n",
+      "\u001b[?25hInstalling collected packages: threadpoolctl, numpy, scipy, joblib, scikit-learn\n",
+      "Successfully installed joblib-1.1.0 numpy-1.22.1 scikit-learn-0.24.0 scipy-1.7.3 threadpoolctl-3.1.0\n",
+      "\u001b[33mWARNING: You are using pip version 20.1.1; however, version 22.0.3 is available.\n",
+      "You should consider upgrading via the '/Library/Frameworks/Python.framework/Versions/3.8/bin/python3.8 -m pip install --upgrade pip' command.\u001b[0m\n"
+     ]
+    }
+   ],
+   "source": [
+    "!pip3 install scikit-learn==0.24\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 67,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.metrics import mean_absolute_error, r2_score\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 74,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def percentage_error(actual, predicted):\n",
+    "    res = np.empty(actual.shape)\n",
+    "    for j in range(actual.shape[0]):\n",
+    "        if actual[j] != 0:\n",
+    "            res[j] = (actual[j] - predicted[j]) / actual[j]\n",
+    "        else:\n",
+    "            res[j] = predicted[j] / np.mean(actual)\n",
+    "    return res\n",
+    "\n",
+    "def mean_absolute_percentage_error(y_true, y_pred): \n",
+    "    return np.mean(np.abs(percentage_error(np.asarray(y_true), np.asarray(y_pred))))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 75,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "r2: 0.49201147002467305\n",
+      "MAPE: 0.26038753527469266\n",
+      "MAE :  1.281410283405665\n"
+     ]
+    }
+   ],
+   "source": [
+    "print('r2:', r2_score(lbl, predicted))\n",
+    "print('MAPE:', mean_absolute_percentage_error(lbl, predicted))\n",
+    "print('MAE : ', mean_absolute_error(lbl, predicted))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Таблица со значениями метрик"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 87,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from tqdm import tqdm_notebook\n",
+    "from multiprocessing import Pool"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 88,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "models = ['RidgeRegressor']\n",
+    "metrics = ['MAPE', 'MAE', 'R2']\n",
+    "formes = ['inverted', 'average']\n",
+    "columns = [\n",
+    "    np.array([models[i] for i in range(1) for j in range(3) for k in range(2)]),\n",
+    "    np.array([metrics[j] for i in range(1) for j in range(3) for k in range(2)]),\n",
+    "    np.array([formes[k] for i in range(1) for j in range(3) for k in range(2)]),\n",
+    "]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 101,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "c01f16fc5ac540e3b4b3ff9313908e29",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=8.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "chans = ['Fz', 'F3', 'F7','C3', 'T7', 'Pz', 'P3','P7', 'O1', 'Oz', 'O2','P4', 'P8', 'Cz','C4', 'T8', 'F4', 'F8']\n",
+    "result = pd.DataFrame()\n",
+    "grid_res = []\n",
+    "for film in tqdm_notebook(range(1, 9)):\n",
+    "    df = pd.DataFrame(np.random.randn(1, 1 * 3 * 2), columns=columns)\n",
+    "    X_test = data.loc[(data['film'] == film)].reset_index(drop=True)\n",
+    "    X_train = data.loc[(data['film'] != film)].reset_index(drop=True)\n",
+    "    X_train = X_train.sample(frac=1)\n",
+    "    X_test = X_test.sample(frac=1)\n",
+    "\n",
+    "    y_train = X_train['labels']\n",
+    "    y_test_inv = np.array(X_test['labels'])\n",
+    "    train_film = X_train['film']\n",
+    "    train_subj = X_train['Subj']\n",
+    "    train_ch = X_train['ch']\n",
+    "    test_film = X_test['film']\n",
+    "    test_subj = X_test['Subj']\n",
+    "    test_ch = np.array(X_test['ch'])\n",
+    "    \n",
+    "    X_train = X_train.drop(['film', 'Subj', 'labels'], axis=1)\n",
+    "    X_test = X_test.drop(['film', 'Subj', 'labels'], axis=1)\n",
+    "    \n",
+    "    qt_train = QuantileTransformer(output_distribution='normal',\n",
+    "                             copy=True)\n",
+    "    y_train = pd.DataFrame(qt_train.fit_transform(np.array(y_train).reshape(-1, 1)))\n",
+    "    qt_test = QuantileTransformer(output_distribution='normal',\n",
+    "                             copy=True)\n",
+    "    y_test = pd.DataFrame(qt_test.fit_transform(np.array(y_test_inv).reshape(-1, 1)))\n",
+    "    \n",
+    "    model = Ridge()\n",
+    "    model.fit(X_train, y_train)\n",
+    "    y_pred = model.predict(X_test)\n",
+    "    preds = qt_test.inverse_transform(np.array(y_pred).reshape(-1, 1))\n",
+    "    df[('RidgeRegressor', 'R2', 'inverted')] = r2_score(preds, y_test_inv)\n",
+    "    df[('RidgeRegressor', 'MAPE', 'inverted')] = mean_absolute_percentage_error(preds, y_test_inv)\n",
+    "    df[('RidgeRegressor', 'MAE', 'inverted')] = mean_absolute_error(preds, y_test_inv)\n",
+    "    \n",
+    "    pred = [[0 for j in range(8)] for i in range(12)]\n",
+    "    num_chans = [[0 for j in range(8)] for i in range(12)]\n",
+    "    labels = [[0 for j in range(8)] for i in range(12)]\n",
+    "    lbl = [[0 for j in range(8)] for i in range(12)]\n",
+    "    channels = [[] for i in range(12)]\n",
+    "    for i in range(len(preds)):\n",
+    "        pred[np.array(test_subj)[i] - 1][np.array(test_film)[i] - 1] += preds[i]\n",
+    "        num_chans[np.array(test_subj)[i] - 1][np.array(test_film)[i] - 1] += 1\n",
+    "        labels[np.array(test_subj)[i] - 1][np.array(test_film)[i] - 1] += y_test_inv[i]\n",
+    "        channels[np.array(test_subj)[i] - 1].append(chans[test_ch[i] - 1])\n",
+    "    labels = np.array(labels).astype(np.float64) / np.array(num_chans).astype(np.float64)\n",
+    "    pred = np.array(pred).astype(np.float64) / np.array(num_chans).astype(np.float64)\n",
+    "    labels = np.nan_to_num(labels)\n",
+    "    pred = np.nan_to_num(pred)\n",
+    "    predicted = []\n",
+    "    lbl = []\n",
+    "    for i in range(len(labels)):\n",
+    "        if sum(labels[i]) != 0:\n",
+    "            for j in range(8):\n",
+    "                if labels[i][j] != 0:\n",
+    "                    lbl.append(labels[i][j])  \n",
+    "                    predicted.append(pred[i][j])\n",
+    "\n",
+    "    df[('RidgeRegressor', 'R2', 'average')] = r2_score(lbl, predicted)\n",
+    "    df[('RidgeRegressor', 'MAPE', 'average')] = mean_absolute_percentage_error(lbl, predicted)\n",
+    "    df[('RidgeRegressor', 'MAE', 'average')] = mean_absolute_error(lbl, predicted)\n",
+    "    result = pd.concat([result, df], axis=0)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 102,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result.to_excel('metrics.xlsx')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 103,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "result.describe().to_excel('metrics_described.xlsx')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 104,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "params = {'depth': 6, 'l2_leaf_reg': 3, 'iterations': 1000, 'learning_rate': 0.1, 'loss_function' : 'RMSE'}\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 105,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import warnings\n",
+    "import logging\n",
+    "warnings.filterwarnings('ignore')\n",
+    "\n",
+    "logger = logging.getLogger()\n",
+    "logger.setLevel(logging.CRITICAL)\n",
+    "logging.getLogger(\"shap\").setLevel(logging.WARNING)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Таблицы со значениями shap для всех фильмов (1 на тест, остальные на обучение)\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 106,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "4b2453c2cb044f718d76142c6a716d06",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=8.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "7a98c64a34f147099a02298222d86f7e",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=195.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "0f5990da702e44dba578ef13ed7d138a",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=191.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "d44e22759eb84f20bf35f85ad1236d63",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=199.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "2bddb9c8ba6e46c9b50d81ccd3f07bdc",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=205.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "7f137e27da7542d7b744849b20f56fbd",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=193.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "382b149aad0c49c595f3d7843da2c7da",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=182.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "c7d74f8a15184f09b4f32807efb00b9a",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=206.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "10cd4813671c405e9d59c19b74173afd",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "HBox(children=(FloatProgress(value=0.0, max=205.0), HTML(value='')))"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "\n",
+      "\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "<Figure size 576x1116 with 0 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "chans = ['Fz', 'F3', 'F7','C3', 'T7', 'Pz', 'P3','P7', 'O1', 'Oz', 'O2','P4', 'P8', 'Cz','C4', 'T8', 'F4', 'F8']\n",
+    "result = pd.DataFrame()\n",
+    "grid_res = []\n",
+    "for film in tqdm_notebook(range(1, 9)):\n",
+    "    df = pd.DataFrame(np.random.randn(1, 1 * 3 * 2), columns=columns)\n",
+    "    X_test = data.loc[(data['film'] == film)].reset_index(drop=True)\n",
+    "    X_train = data.loc[(data['film'] != film)].reset_index(drop=True)\n",
+    "    X_train = X_train.sample(frac=1)\n",
+    "    X_test = X_test.sample(frac=1)\n",
+    "\n",
+    "    y_train = X_train['labels']\n",
+    "    y_test = np.array(X_test['labels'])\n",
+    "    train_film = X_train['film']\n",
+    "    train_subj = X_train['Subj']\n",
+    "    train_ch = X_train['ch']\n",
+    "    test_film = X_test['film']\n",
+    "    test_subj = X_test['Subj']\n",
+    "    test_ch = np.array(X_test['ch'])\n",
+    "    \n",
+    "    X_train = X_train.drop(['film', 'Subj', 'labels', 'ch'], axis=1)\n",
+    "    X_test = X_test.drop(['film', 'Subj', 'labels', 'ch'], axis=1)\n",
+    "    \n",
+    "    \n",
+    "    model = Ridge()\n",
+    "    model.fit(X_train, y_train)\n",
+    "    X_train_summary = shap.kmeans(X_train, 10)\n",
+    "    explainer = shap.KernelExplainer(model.predict, X_train_summary)\n",
+    "    shap_values = explainer.shap_values(X_test)\n",
+    "    shap.summary_plot(shap_values, X_test, max_display=35, show=False)\n",
+    "    plt.savefig('F{}.png'.format(film),  bbox_inches='tight')\n",
+    "    plt.clf()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.8.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}
